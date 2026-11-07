@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#c4452d">
+<link rel="manifest" href="kalendarium-manifest.webmanifest">
+<link rel="icon" href="kalendarium-icon-192.png">
+<link rel="apple-touch-icon" href="kalendarium-icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Календариум — конструктор календарей</title>
+<style>
+:root{--bg:#efe9dd;--pn:#fffdf8;--tx:#2b2622;--mu:#8a8075;--ac:#c4452d;--ln:#d9cfbf}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.4 "Trebuchet MS",system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+button,select,input{font:inherit}
+button{cursor:pointer;border:1px solid var(--ln);background:var(--pn);color:var(--tx);border-radius:8px;padding:7px 12px}
+button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+h1,h2{font-family:Georgia,"Times New Roman",serif;margin:0}
+.top{display:flex;gap:10px;align-items:center;padding:12px 18px;background:var(--pn);border-bottom:2px solid var(--tx);position:sticky;top:0;z-index:5}
+.top h1{flex:1;font-size:22px}
+#cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;padding:20px}
+.card{background:var(--pn);border:2px solid var(--tx);border-radius:12px;padding:16px;box-shadow:4px 4px 0 var(--tx)}
+.card h2{font-size:20px;margin-bottom:4px}.card p{margin:0 0 12px;color:var(--mu);font-size:13px}
+.card .r{display:flex;gap:6px;flex-wrap:wrap}.card button{padding:5px 9px;font-size:13px}
+.empty{padding:40px;text-align:center;color:var(--mu)}
+#ed{display:flex;align-items:flex-start}
+#side{width:290px;flex:none;padding:14px;background:var(--pn);border-right:2px solid var(--tx);height:calc(100vh - 57px);overflow:auto;position:sticky;top:57px}
+#side label{display:block;font-size:12px;color:var(--mu);margin:10px 0 3px;text-transform:uppercase;letter-spacing:.05em}
+#side input[type=text],#side input[type=number],#side select{width:100%;padding:7px;border:1px solid var(--ln);border-radius:7px;background:#fff}
+#side .ck{display:flex;gap:8px;align-items:center;text-transform:none;font-size:14px;color:var(--tx)}
+.th{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.th img{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--ln);cursor:pointer}
+#sheets{flex:1;padding:20px;min-width:0}
+/* темы */
+.sheet{--p:#fffdf8;--t:#2b2622;--a:#c4452d;--l:#d9cfbf;--w:#f6e9e3}
+.t-ocean{--p:#f6fbff;--t:#10303f;--a:#1b7ca8;--l:#bcd6e3;--w:#e3f1f8}
+.t-forest{--p:#f7faf3;--t:#23331f;--a:#4b8a3c;--l:#c6d6bd;--w:#e7f0e0}
+.t-night{--p:#1d2033;--t:#eceaf6;--a:#f2b84b;--l:#3d4263;--w:#262a45}
+.t-mono{--p:#fff;--t:#111;--a:#111;--l:#bbb;--w:#eee}
+.sheet{position:relative;background:var(--p);color:var(--t);max-width:920px;margin:0 auto 28px;padding:18px;border:2px solid var(--t);border-radius:6px;box-shadow:6px 6px 0 rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet>*:not(.patch){position:relative;z-index:1}
+.patch{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.patch img{position:absolute;transform-origin:center}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;padding:14px 16px;min-height:80px;border-bottom:3px solid var(--a);background-size:cover;background-position:center;margin-bottom:8px}
+.hd.img{min-height:150px;color:#fff;border:0;border-radius:4px;text-shadow:0 2px 8px #000a;background-color:#333}
+.hd h2{font-size:44px;line-height:1;text-transform:capitalize}.hd span{font:700 28px Georgia,serif;color:var(--a)}.hd.img span{color:#fff}
+.wd,.gr{display:grid;grid-template-columns:repeat(7,1fr)}
+.wd div{text-align:center;font-weight:700;font-size:12px;padding:4px;letter-spacing:.08em;text-transform:uppercase}
+.wd .we{color:var(--a)}
+.gr{border-top:1px solid var(--l);border-left:1px solid var(--l);flex:1;grid-auto-rows:minmax(92px,1fr)}
+.c{border-right:1px solid var(--l);border-bottom:1px solid var(--l);padding:4px;position:relative;min-width:0;min-height:0;overflow:hidden}
+.c.we{background:var(--w)}.c.bl{background:transparent}
+.c .n{font:700 15px Georgia,serif}.c.ho .n{color:var(--a)}.c.ho .n:after{content:"●";font-size:7px;vertical-align:super;margin-left:2px}
+.add{position:absolute;top:2px;right:2px;width:22px;height:22px;padding:0;border-radius:50%;line-height:1;background:var(--a);color:#fff;border:0;opacity:.25;font-size:15px}
+.c:hover .add{opacity:1}
+.ev{display:flex;align-items:center;gap:4px;width:100%;margin-top:2px;padding:1px 3px 1px 1px;border:0;background:rgba(127,127,127,.12);color:var(--t);font-size:11px;text-align:left;border-radius:10px}
+.ev b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spr{display:inline-flex;flex:none;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;padding:3px;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55),0 0 0 1px rgba(0,0,0,.35)}
+.spr svg{width:100%;height:100%}
+.lst{margin-top:10px;font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:3px 18px}
+.lst div{display:flex;gap:6px;align-items:flex-start}.lst small{color:var(--mu)}
+.nt{margin-top:10px}.nt h3{margin:0 0 2px;font:700 13px Georgia,serif;color:var(--a);text-transform:uppercase;letter-spacing:.1em}
+.nb{min-height:110px;outline:0;line-height:24px;white-space:pre-wrap;background:repeating-linear-gradient(transparent 0 23px,var(--l) 23px 24px);padding:0 4px}
+.nb:empty:before{content:"Пометки…";opacity:.4}
+dialog{border:2px solid var(--tx);border-radius:12px;padding:18px;width:min(420px,94vw);background:var(--pn);color:var(--tx);box-shadow:6px 6px 0 var(--tx)}
+dialog::backdrop{background:#0006}
+dialog input[type=text],dialog textarea{width:100%;padding:8px;border:1px solid var(--ln);border-radius:7px;margin:4px 0 10px;font:inherit}
+.ig,.cg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.ig button{padding:0;border-radius:50%;border:2px solid transparent;background:none}.ig button.on{border-color:var(--tx)}
+.ig .spr{width:32px;height:32px;padding:6px}
+.cg button{width:26px;height:26px;border-radius:50%;padding:0}.cg button.on{outline:3px solid var(--tx);outline-offset:1px}
+.dr{display:flex;gap:8px;justify-content:flex-end}
+@media(max-width:800px){#ed{flex-direction:column}#side{width:100%;height:auto;position:static;border:0;border-bottom:2px solid var(--tx)}.hd h2{font-size:30px}.lst{grid-template-columns:1fr}}
+@page{size:A4;margin:7mm}
+@media print{
+ body{background:#fff}.top,#lib,#side,.add{display:none!important}
+ #ed{display:block}#sheets{padding:0}
+ .sheet{box-shadow:none;border-width:1.5px;margin:0;max-width:none;height:283mm;page-break-after:always;break-after:page;border-radius:0}
+ .sheet:last-child{page-break-after:auto}
+ .gr{grid-auto-rows:minmax(0,1fr)}.nb{min-height:30mm}.hd.img{min-height:34mm}
+}
+</style>
+</head>
+<body>
+
+<section id="lib">
+ <div class="top"><h1>📅 Календариум</h1><button class="pri" id="new">+ Новый календарь</button></div>
+ <div id="cards"></div>
+</section>
+
+<section id="ed" hidden>
+ <div class="top" style="position:fixed;left:0;right:0"><button id="back">← К списку</button><h1 id="ttl"></h1><button class="pri" id="pdf">⬇ Сохранить в PDF</button></div>
+ <aside id="side" style="margin-top:57px">
+  <label>Название</label><input type="text" data-k="name">
+  <label>Период</label><select data-k="mode"><option value="year">Весь год</option><option value="month">Один месяц</option></select>
+  <label>Год</label><input type="number" data-k="year" data-n min="1900" max="2200">
+  <div id="mrow"><label>Месяц</label><select data-k="month" data-n id="msel"></select></div>
+  <label>Неделя начинается с</label><select data-k="ws" data-n><option value="1">Понедельника</option><option value="0">Воскресенья</option></select>
+  <label>Страна (праздники)</label><select data-k="country"><option value="RU">Россия</option><option value="UA">Украина</option><option value="BY">Беларусь</option><option value="KZ">Казахстан</option><option value="US">США</option><option value="DE">Германия</option></select>
+  <label class="ck"><input type="checkbox" data-k="holidays"> Отмечать праздники</label>
+  <label>Тема</label><select data-k="theme"><option value="">Бумага</option><option value="t-ocean">Океан</option><option value="t-forest">Лес</option><option value="t-night">Ночь</option><option value="t-mono">Минимализм</option></select>
+  <label>Изображения</label><select data-k="bgMode"><option value="none">Без изображений (чистый календарь)</option><option value="header">Картинка в шапке</option><option value="patches">Нашивки по всей странице</option></select>
+  <div id="imgs"></div>
+  <label class="ck"><input type="checkbox" data-k="showList"> Список мероприятий под календарём</label>
+  <label class="ck"><input type="checkbox" data-k="showNotes"> Поле для пометок</label>
+ </aside>
+ <main id="sheets"></main>
+</section>
+
+<dialog id="dlg">
+ <h2 id="dt" style="font-size:20px"></h2>
+ <label>Название</label><input type="text" id="et" placeholder="Например: Финал по плаванию">
+ <label>Описание</label><textarea id="ed2" rows="3"></textarea>
+ <label>Значок</label><div class="ig" id="ig"></div>
+ <label>Цвет</label><div class="cg" id="cg"></div>
+ <div class="dr"><button id="del">Удалить</button><button id="cx">Отмена</button><button class="pri" id="ok">Сохранить</button></div>
+</dialog>
+
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MN=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const WD=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const COL=['#c4452d','#e8912d','#d9b51c','#4b8a3c','#1b7ca8','#5b4bb7','#b8408f','#2b2622'];
+const IC={star:'M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 3 1.1-6.2L3 9.7l6.2-.9z',
+trophy:'M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v2a3 3 0 0 0 4 3M16 6h4v2a3 3 0 0 1-4 3M12 13v4M8 20h8M10 17h4',
+flag:'M5 21V4M5 4h12l-2 4 2 4H5',book:'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM8 7h7',
+heart:'M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z',bolt:'M13 2L5 14h6l-1 8 8-12h-6z',
+bell:'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',cake:'M4 20h16v-7H4zM4 16c3 2 5-2 8 0s5-2 8 0M12 13V9M12 6v1',
+plane:'M3 12l18-8-5 16-4-6zM12 14l9-10',music:'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+flame:'M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z',
+medal:'M8 3l4 7 4-7M18 15a6 6 0 1 1-12 0 6 6 0 0 1 12 0z',key:'M14 10a4 4 0 1 0-3 3l9 8M17 18l2-2',
+cap:'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5',pin:'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-.01'};
+const spr=(k,c)=>`<span class="spr" style="background:${c}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${IC[k]||IC.star}"/></svg></span>`;
+const H={RU:'1-1,1-2,1-3,1-4,1-5,1-6,1-7,1-8,2-23,3-8,5-1,5-9,6-12,11-4',UA:'1-1,3-8,5-1,5-8,6-28,8-24,12-25',BY:'1-1,1-7,3-8,5-1,5-9,7-3,11-7,12-25',
+KZ:'1-1,1-2,3-8,3-21,3-22,3-23,5-1,5-7,5-9,7-6,8-30,10-25,12-16',US:'1-1,6-19,7-4,11-11,12-25',DE:'1-1,5-1,10-3,12-25,12-26'};
+const pad=n=>String(n).padStart(2,'0');
+let db=[];try{db=JSON.parse(localStorage.getItem('kalendarium')||'[]')}catch(e){}
+let cal=null,cur=null;
+const save=()=>{try{localStorage.setItem('kalendarium',JSON.stringify(db))}catch(e){alert('Не хватает места в хранилище браузера — уменьшите число картинок.')}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---------- библиотека ---------- */
+function lib(){
+ $('#cards').innerHTML=db.length?db.map(c=>`<div class="card"><h2>${esc(c.name)}</h2>
+ <p>${c.mode=='year'?'Весь '+c.year+' год':MN[c.month]+' '+c.year} · ${Object.values(c.ev).flat().length} мероприятий</p>
+ <div class="r"><button class="pri" data-a="open" data-i="${c.id}">Открыть</button><button data-a="pdf" data-i="${c.id}">PDF</button><button data-a="dup" data-i="${c.id}">Копия</button><button data-a="rm" data-i="${c.id}">✕</button></div></div>`).join(''):'<div class="empty">Пока нет ни одного календаря.<br>Нажмите «Новый календарь» и начните ✨</div>';
+}
+$('#cards').onclick=e=>{const b=e.target.closest('button');if(!b)return;const c=db.find(x=>x.id==b.dataset.i),a=b.dataset.a;
+ if(a=='open')open(c);else if(a=='pdf'){open(c);setTimeout(()=>print(),300)}
+ else if(a=='dup'){const d=JSON.parse(JSON.stringify(c));d.id=uid();d.name+=' (копия)';db.push(d);save();lib()}
+ else if(a=='rm'&&confirm('Удалить «'+c.name+'» навсегда?')){db=db.filter(x=>x!=c);save();lib()}};
+$('#new').onclick=()=>{const n=prompt('Название календаря','Олимпиады');if(n===null)return;const d=new Date();
+ const c={id:uid(),name:n||'Без названия',mode:'year',year:d.getFullYear(),month:d.getMonth(),ws:1,country:'RU',holidays:true,theme:'',bgMode:'none',op:.5,
+ hdr:null,patches:[],showList:true,showNotes:true,notes:{},ev:{}};db.push(c);save();open(c)};
+
+/* ---------- редактор ---------- */
+$('#msel').innerHTML=MN.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+function open(c){cal=c;$('#lib').hidden=true;$('#ed').hidden=false;
+ document.querySelectorAll('[data-k]').forEach(e=>{const v=cal[e.dataset.k];e.type=='checkbox'?e.checked=v:e.value=v});
+ side();render();scrollTo(0,0)}
+$('#back').onclick=()=>{$('#ed').hidden=true;$('#lib').hidden=false;lib()};
+$('#pdf').onclick=()=>{alert('В окне печати выберите принтер «Сохранить как PDF». Для цветного фона включите «Фоновая графика».');print()};
+$('#side').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;
+ cal[k]=e.target.type=='checkbox'?e.target.checked:e.target.dataset.n!=null?+e.target.value:e.target.value;save();side();render()});
+function side(){$('#mrow').hidden=cal.mode=='year';$('#ttl').textContent=cal.name;
+ let h='';
+ if(cal.bgMode=='header')h+=`<label>Картинка шапки</label><input type="file" accept="image/*" id="fh">${cal.hdr?`<div class="th"><img src="${cal.hdr}" data-rm="h" title="Убрать"></div>`:''}`;
+ if(cal.bgMode=='patches')h+=`<label>Нашивки (можно сразу несколько)</label><input type="file" accept="image/*" multiple id="fp">
+  <div class="th">${cal.patches.map((p,i)=>`<img src="${p}" data-rm="${i}" title="Убрать">`).join('')}</div>
+  <label>Прозрачность</label><input type="range" min=".1" max="1" step=".05" value="${cal.op}" id="op" style="width:100%">`;
+ $('#imgs').innerHTML=h}
+function fit(f,max,t){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL(t,.85))};i.src=URL.createObjectURL(f)})}
+$('#imgs').addEventListener('change',async e=>{
+ if(e.target.id=='fh'){cal.hdr=await fit(e.target.files[0],1400,'image/jpeg')}
+ if(e.target.id=='fp'){for(const f of e.target.files)cal.patches.push(await fit(f,300,'image/png'))}
+ save();side();render()});
+$('#imgs').addEventListener('input',e=>{if(e.target.id=='op'){cal.op=+e.target.value;save();render()}});
+$('#imgs').addEventListener('click',e=>{const r=e.target.dataset.rm;if(r==null)return;r=='h'?cal.hdr=null:cal.patches.splice(+r,1);save();side();render()});
+
+const rng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+function sheet(y,m){
+ const hol=new Set(cal.holidays?H[cal.country].split(','):[]),ws=cal.ws,off=(new Date(y,m,1).getDay()-ws+7)%7,n=new Date(y,m+1,0).getDate(),ym=y+'-'+pad(m+1);
+ const wd=ws?WD:[WD[6],...WD.slice(0,6)];
+ let p='';
+ if(cal.bgMode=='patches'&&cal.patches.length){const r=rng([...cal.id+ym].reduce((h,c)=>h*31+c.charCodeAt(0)|0,7));
+  for(let i=0;i<34;i++){const s=38+r()*50;p+=`<img src="${cal.patches[i%cal.patches.length]}" style="left:${r()*95-3}%;top:${r()*97-3}%;width:${s}px;transform:rotate(${r()*50-25}deg)">`}
+  p=`<div class="patch" style="opacity:${cal.op}">${p}</div>`}
+ const img=cal.bgMode=='header'&&cal.hdr;
+ let g='';for(let i=0;i<off;i++)g+='<div class="c bl"></div>';
+ for(let d=1;d<=n;d++){const dow=new Date(y,m,d).getDay(),key=ym+'-'+pad(d);
+  const evs=(cal.ev[key]||[]).map(e=>`<button class="ev" data-d="${key}" data-i="${e.id}" title="${esc(e.desc)}">${spr(e.icon,e.color)}<b>${esc(e.title)}</b></button>`).join('');
+  g+=`<div class="c${dow%6==0?' we':''}${hol.has((m+1)+'-'+d)?' ho':''}"><span class="n">${d}</span><button class="add" data-d="${key}" title="Добавить мероприятие">+</button>${evs}</div>`}
+ while((off+n+(g.match(/class="c bl"/g)||[]).length-off)%7&&false);
+ const tot=Math.ceil((off+n)/7)*7;for(let i=off+n;i<tot;i++)g+='<div class="c bl"></div>';
+ let list='';
+ if(cal.showList){const items=Object.keys(cal.ev).filter(k=>k.startsWith(ym)).sort().flatMap(k=>cal.ev[k].map(e=>`<div>${spr(e.icon,e.color)}<span><b>${+k.slice(8)} ${MN[m].slice(0,3)}.</b> ${esc(e.title)}${e.desc?`<br><small>${esc(e.desc)}</small>`:''}</span></div>`));
+  if(items.length)list=`<div class="lst">${items.join('')}</div>`}
+ return `<article class="sheet ${cal.theme}">${p}
+ <div class="hd${img?' img':''}" ${img?`style="background-image:linear-gradient(transparent 20%,#0008),url(${cal.hdr})"`:''}><h2>${MN[m]}</h2><span>${y}</span></div>
+ <div class="wd">${wd.map((w,i)=>`<div class="${(ws?i>4:i%6==0)?'we':''}">${w}</div>`).join('')}</div>
+ <div class="gr">${g}</div>${list}
+ ${cal.showNotes?`<div class="nt"><h3>Пометки</h3><div class="nb" contenteditable data-ym="${ym}">${esc(cal.notes[ym]||'')}</div></div>`:''}</article>`}
+function render(){$('#sheets').innerHTML=cal.mode=='year'?[...Array(12)].map((_,m)=>sheet(cal.year,m)).join(''):sheet(cal.year,cal.month)}
+$('#sheets').addEventListener('input',e=>{if(e.target.dataset.ym){cal.notes[e.target.dataset.ym]=e.target.innerText;save()}});
+$('#sheets').addEventListener('click',e=>{const b=e.target.closest('button');if(b)edit(b.dataset.d,b.dataset.i)});
+
+/* ---------- мероприятия ---------- */
+function paint(){$('#ig').innerHTML=Object.keys(IC).map(k=>`<button data-ic="${k}" class="${cur.icon==k?'on':''}">${spr(k,cur.color)}</button>`).join('');
+ $('#cg').innerHTML=COL.map(c=>`<button data-c="${c}" class="${cur.color==c?'on':''}" style="background:${c}"></button>`).join('')+`<input type="color" value="${cur.color}" id="cc" style="width:30px;height:28px;border:0;padding:0">`}
+function edit(date,id){const old=id&&cal.ev[date].find(e=>e.id==id);
+ cur={date,id:old?.id,icon:old?.icon||'star',color:old?.color||COL[0]};
+ $('#dt').textContent=(old?'Изменить: ':'Новое мероприятие · ')+date.split('-').reverse().join('.');
+ $('#et').value=old?.title||'';$('#ed2').value=old?.desc||'';$('#del').hidden=!old;paint();$('#dlg').showModal()}
+$('#dlg').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.ic){cur.icon=t.dataset.ic;paint()}if(t.dataset.c){cur.color=t.dataset.c;paint()}});
+$('#dlg').addEventListener('input',e=>{if(e.target.id=='cc'){cur.color=e.target.value;$('#ig').querySelectorAll('.spr').forEach(s=>s.style.background=cur.color)}});
+$('#cx').onclick=()=>$('#dlg').close();
+$('#ok').onclick=()=>{const l=cal.ev[cur.date]=cal.ev[cur.date]||[],o={id:cur.id||uid(),icon:cur.icon,color:cur.color,title:$('#et').value.trim()||'Событие',desc:$('#ed2').value.trim()};
+ const i=l.findIndex(e=>e.id==o.id);i<0?l.push(o):l[i]=o;save();render();$('#dlg').close()};
+$('#del').onclick=()=>{cal.ev[cur.date]=cal.ev[cur.date].filter(e=>e.id!=cur.id);if(!cal.ev[cur.date].length)delete cal.ev[cur.date];save();render();$('#dlg').close()};
+lib();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('kalendarium-sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
