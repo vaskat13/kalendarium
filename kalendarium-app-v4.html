@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#c4452d">
+<link rel="manifest" href="kalendarium-manifest-v4.webmanifest">
+<link rel="icon" href="kalendarium-icon-192.png">
+<link rel="apple-touch-icon" href="kalendarium-icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Календариум — конструктор календарей</title>
+<style>
+:root{--bg:#efe9dd;--pn:#fffdf8;--tx:#2b2622;--mu:#8a8075;--ac:#c4452d;--ln:#d9cfbf}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font:15px/1.4 "Trebuchet MS",system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+button,select,input{font:inherit}
+button{cursor:pointer;border:1px solid var(--ln);background:var(--pn);color:var(--tx);border-radius:8px;padding:7px 12px}
+button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+h1,h2{font-family:Georgia,"Times New Roman",serif;margin:0}
+.top{display:flex;gap:10px;align-items:center;padding:12px 18px;background:var(--pn);border-bottom:2px solid var(--tx);position:sticky;top:0;z-index:5}
+.top h1{flex:1;font-size:22px}
+#cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;padding:20px}
+.card{background:var(--pn);border:2px solid var(--tx);border-radius:12px;padding:16px;box-shadow:4px 4px 0 var(--tx)}
+.card h2{font-size:20px;margin-bottom:4px}.card p{margin:0 0 12px;color:var(--mu);font-size:13px}
+.card .r{display:flex;gap:6px;flex-wrap:wrap}.card button{padding:5px 9px;font-size:13px}
+.empty{padding:40px;text-align:center;color:var(--mu)}
+#ed{display:flex;align-items:flex-start;padding-top:57px}
+#side{width:290px;flex:none;padding:14px;background:var(--pn);border-right:2px solid var(--tx);height:calc(100vh - 57px);overflow:auto;position:sticky;top:57px}
+#side label{display:block;font-size:12px;color:var(--mu);margin:10px 0 3px;text-transform:uppercase;letter-spacing:.05em}
+#side input[type=text],#side input[type=number],#side select{width:100%;padding:7px;border:1px solid var(--ln);border-radius:7px;background:#fff}
+#side .ck{display:flex;gap:8px;align-items:center;text-transform:none;font-size:14px;color:var(--tx)}
+.th{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.th img{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--ln);cursor:pointer}
+#sheets{flex:1;padding:20px;min-width:0}
+/* темы */
+.sheet{--p:#fffdf8;--t:#2b2622;--a:#c4452d;--l:#d9cfbf;--w:#f6e9e3}
+.t-ocean{--p:#f6fbff;--t:#10303f;--a:#1b7ca8;--l:#bcd6e3;--w:#e3f1f8}
+.t-forest{--p:#f7faf3;--t:#23331f;--a:#4b8a3c;--l:#c6d6bd;--w:#e7f0e0}
+.t-night{--p:#1d2033;--t:#eceaf6;--a:#f2b84b;--l:#3d4263;--w:#262a45}
+.t-mono{--p:#fff;--t:#111;--a:#111;--l:#bbb;--w:#eee}
+.sheet{position:relative;background:var(--p);color:var(--t);max-width:920px;margin:0 auto 28px;padding:18px;border:2px solid var(--t);border-radius:6px;box-shadow:6px 6px 0 rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.sheet>*:not(.patch){position:relative;z-index:1}
+.patch{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.patch img{position:absolute;transform-origin:center}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;padding:14px 16px;min-height:80px;border-bottom:3px solid var(--a);background-size:cover;background-position:center;margin-bottom:8px}
+.hd.img{min-height:150px;color:#fff;border:0;border-radius:4px;text-shadow:0 2px 8px #000a;background-color:#333}
+.hd h2{font-size:44px;line-height:1;text-transform:capitalize}.hd span{font:700 28px Georgia,serif;color:var(--a)}.hd.img span{color:#fff}
+.wd,.gr{display:grid;grid-template-columns:repeat(7,1fr)}
+.wd div{text-align:center;font-weight:700;font-size:12px;padding:4px;letter-spacing:.08em;text-transform:uppercase}
+.wd .we{color:var(--a)}
+.gr{border-top:1px solid var(--l);border-left:1px solid var(--l);flex:1;grid-auto-rows:minmax(92px,1fr)}
+.c{border-right:1px solid var(--l);border-bottom:1px solid var(--l);padding:4px;position:relative;min-width:0;min-height:0;overflow:hidden}
+.c.we{background:var(--w)}.c.bl{background:transparent}
+.c .n{font:700 15px Georgia,serif}.c.ho .n{color:var(--a)}.c.ho .n:after{content:"●";font-size:7px;vertical-align:super;margin-left:2px}
+.add{position:absolute;top:2px;right:2px;width:22px;height:22px;padding:0;border-radius:50%;line-height:1;background:var(--a);color:#fff;border:0;opacity:.25;font-size:15px}
+.c:hover .add{opacity:1}
+.ev{display:flex;align-items:center;gap:4px;width:100%;margin-top:2px;padding:1px 3px 1px 1px;border:0;background:rgba(127,127,127,.12);color:var(--t);font-size:11px;text-align:left;border-radius:10px}
+.ev b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spr{display:inline-flex;flex:none;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;padding:3px;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55),0 0 0 1px rgba(0,0,0,.35)}
+.spr svg{width:100%;height:100%}
+.lst{margin-top:10px;font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:3px 18px}
+.lst div{display:flex;gap:6px;align-items:flex-start}.lst small{color:var(--mu)}
+.nt{margin-top:10px}.nt h3{margin:0 0 2px;font:700 13px Georgia,serif;color:var(--a);text-transform:uppercase;letter-spacing:.1em}
+.nb{min-height:110px;outline:0;line-height:24px;white-space:pre-wrap;background:repeating-linear-gradient(transparent 0 23px,var(--l) 23px 24px);padding:0 4px}
+.nb{position:relative}.nb.em:before{content:"Пометки…";opacity:.4;position:absolute;pointer-events:none}
+.ev i{font-style:normal;opacity:.7;font-size:10px}
+.pr{display:flex;gap:6px}.pr select{flex:1}#side .pr input[type=number]{width:90px}
+#fmt{position:sticky;top:57px;z-index:4;margin:12px 20px 0;padding:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;background:var(--pn);border:2px solid var(--tx);border-radius:8px}
+#fmt select{padding:5px;border:1px solid var(--ln);border-radius:7px;background:#fff}#fmt button{padding:4px 9px}
+#fmt label{display:flex;align-items:center;gap:3px;font-weight:700;border:1px solid var(--ln);border-radius:7px;padding:2px 5px;background:#fff}
+#fmt input[type=color]{width:26px;height:24px;border:0;padding:0;background:none}.fh{font-size:12px;color:var(--mu)}
+dialog{max-height:92vh;overflow:auto}
+.top h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}a.dl{display:inline-block;padding:7px 12px;border-radius:8px;background:var(--ac);color:#fff;text-decoration:none}
+dialog label{display:block;font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
+dialog label.ck{display:flex;gap:8px;align-items:center;text-transform:none;font-size:14px;color:var(--tx);margin:8px 0}
+dialog select,dialog input[type=date],dialog input[type=number]{padding:7px;border:1px solid var(--ln);border-radius:7px;background:#fff;font:inherit;margin-bottom:6px}
+dialog select,dialog input[type=date]{width:100%}dialog textarea{margin-top:0}
+dialog{border:2px solid var(--tx);border-radius:12px;padding:18px;width:min(420px,94vw);background:var(--pn);color:var(--tx);box-shadow:6px 6px 0 var(--tx)}
+dialog::backdrop{background:#0006}
+dialog input[type=text],dialog textarea{width:100%;padding:8px;border:1px solid var(--ln);border-radius:7px;margin:4px 0 10px;font:inherit}
+.ig,.cg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.ig button{padding:0;border-radius:50%;border:2px solid transparent;background:none}.ig button.on{border-color:var(--tx)}
+.ig .spr{width:32px;height:32px;padding:6px}
+.cg button{width:26px;height:26px;border-radius:50%;padding:0}.cg button.on{outline:3px solid var(--tx);outline-offset:1px}
+.dr{display:flex;gap:8px;justify-content:flex-end}
+@media(max-width:800px){#ed{flex-direction:column}#side{width:100%;height:auto;position:static;border:0;border-bottom:2px solid var(--tx)}.hd h2{font-size:30px}.lst{grid-template-columns:1fr}}
+@page{size:A4;margin:7mm}
+@media print{
+ body{background:#fff}.top,#lib,#side,.add,#fmt{display:none!important}
+ #ed{display:block;padding:0}#sheets{padding:0}
+ .sheet{box-shadow:none;border-width:1.5px;margin:0;max-width:none;height:283mm;page-break-after:always;break-after:page;border-radius:0}
+ .sheet:last-child{page-break-after:auto}
+ .gr{grid-auto-rows:minmax(0,1fr)}.nb{min-height:30mm}.hd.img{min-height:34mm}
+}
+</style>
+</head>
+<body>
+
+<section id="lib">
+ <div class="top"><h1>📅 Календариум</h1><button class="pri" id="new">+ Новый календарь</button></div>
+ <div id="cards"></div>
+</section>
+
+<section id="ed" hidden>
+ <div class="top" style="position:fixed;left:0;right:0"><button id="back">← К списку</button><h1 id="ttl"></h1><button id="img">🖼 Картинка</button><button class="pri" id="pdf">⬇ PDF</button></div>
+ <aside id="side">
+  <label>Название</label><input type="text" data-k="name">
+  <label>Период: с</label><div class="pr"><select class="ms" data-k="sm" data-n></select><input type="number" data-k="sy" data-n min="1900" max="2200"></div>
+  <label>по</label><div class="pr"><select class="ms" data-k="em" data-n></select><input type="number" data-k="ey" data-n min="1900" max="2200"></div>
+  <button type="button" id="fy" style="margin-top:8px;width:100%">Выбрать весь год</button>
+  <label>Неделя начинается с</label><select data-k="ws" data-n><option value="1">Понедельника</option><option value="0">Воскресенья</option></select>
+  <label>Страна (праздники)</label><select data-k="country"><option value="RU">Россия</option><option value="UA">Украина</option><option value="BY">Беларусь</option><option value="KZ">Казахстан</option><option value="US">США</option><option value="DE">Германия</option></select>
+  <label class="ck"><input type="checkbox" data-k="holidays"> Отмечать праздники</label>
+  <label>Тема</label><select data-k="theme"><option value="">Бумага</option><option value="t-ocean">Океан</option><option value="t-forest">Лес</option><option value="t-night">Ночь</option><option value="t-mono">Минимализм</option></select>
+  <label>Изображения</label><select data-k="bgMode"><option value="none">Без изображений (чистый календарь)</option><option value="header">Картинка в шапке</option><option value="patches">Нашивки по всей странице</option></select>
+  <div id="imgs"></div>
+  <label class="ck"><input type="checkbox" data-k="showList"> Заметки к мероприятиям под календарём</label>
+  <label class="ck"><input type="checkbox" data-k="showNotes"> Поле для пометок</label>
+ </aside>
+ <div style="flex:1;min-width:0"><div id="fmt">
+  <span class="fh">Пометки:</span>
+  <select id="ff"><option value="">Шрифт</option><option value="sans-serif">Обычный</option><option value="serif">С засечками</option><option value="monospace">Моно</option><option value="cursive">Рукописный</option><option value="fantasy">Декоративный</option></select>
+  <select id="fs"><option value="">Размер</option><option>10</option><option>12</option><option>14</option><option>16</option><option>18</option><option>22</option><option>28</option><option>36</option></select>
+  <button data-c="bold"><b>Ж</b></button><button data-c="italic"><i>К</i></button><button data-c="underline"><u>Ч</u></button><button data-c="strikeThrough"><s>З</s></button>
+  <label title="Цвет текста">A<input type="color" id="fc" value="#c4452d"></label><label title="Маркер">▮<input type="color" id="fb" value="#ffe066"></label>
+  <button data-c="justifyLeft">⇤</button><button data-c="justifyCenter">↔</button><button data-c="justifyRight">⇥</button><button data-c="insertUnorderedList">• список</button><button data-c="removeFormat">✕ сброс</button>
+ </div><main id="sheets"></main></div>
+</section>
+
+<dialog id="dlg">
+ <h2 id="dt" style="font-size:20px"></h2>
+ <label>Название</label><input type="text" id="et" placeholder="Например: Финал по плаванию">
+ <label>Дата</label><input type="date" id="edt">
+ <label>Значок</label><div class="ig" id="ig"></div>
+ <label>Цвет</label><div class="cg" id="cg"></div>
+ <label>Повтор</label>
+ <select id="rt"><option value="none">Не повторять</option><option value="day">Каждый день</option><option value="week">Каждую неделю</option><option value="month">Каждый месяц</option><option value="year">Каждый год</option></select>
+ <div id="rp" hidden>
+  <label>Повторять каждые <input type="number" id="rn" min="1" max="99" value="1" style="width:64px"> <span id="ru"></span></label>
+  <label>Закончить</label>
+  <select id="re"><option value="never">Никогда (бессрочно)</option><option value="date">В определённую дату</option><option value="count">После нескольких повторов</option></select>
+  <input type="date" id="rd" hidden><input type="number" id="rc" min="1" value="10" hidden style="width:100%" placeholder="Сколько раз">
+ </div>
+ <label class="ck"><input type="checkbox" id="hn"> Заметка к этому мероприятию</label>
+ <textarea id="ed2" rows="3" hidden placeholder="Текст заметки"></textarea>
+ <div class="dr"><button id="del">Удалить</button><button id="cx">Отмена</button><button class="pri" id="ok">Сохранить</button></div>
+</dialog>
+
+<dialog id="xdlg">
+ <h2 style="font-size:20px">Сохранить как картинку</h2>
+ <label>Что сохранить</label>
+ <select id="xm"><option value="one">Один месяц</option><option value="all">Все месяцы вместе</option></select>
+ <div id="xone"><label>Месяц</label><select id="xs"></select></div>
+ <div id="xall" hidden><label>Расположение месяцев</label><select id="xc"><option value="1">В один столбец (лента)</option><option value="2">По 2 в ряд</option><option value="3">По 3 в ряд</option><option value="4">По 4 в ряд</option></select></div>
+ <label>Качество</label><select id="xq"><option value="1">Обычное</option><option value="2">Высокое</option></select>
+ <div id="xp" style="margin-top:10px;text-align:center"></div>
+ <div class="dr" style="margin-top:10px"><button id="xcl">Закрыть</button><button class="pri" id="xgo">Создать картинку</button></div>
+</dialog>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MN=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const WD=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const COL=['#c4452d','#e8912d','#d9b51c','#4b8a3c','#1b7ca8','#5b4bb7','#b8408f','#2b2622'];
+const IC={star:'M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 3 1.1-6.2L3 9.7l6.2-.9z',
+trophy:'M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v2a3 3 0 0 0 4 3M16 6h4v2a3 3 0 0 1-4 3M12 13v4M8 20h8M10 17h4',
+flag:'M5 21V4M5 4h12l-2 4 2 4H5',book:'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM8 7h7',
+heart:'M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z',bolt:'M13 2L5 14h6l-1 8 8-12h-6z',
+bell:'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4',cake:'M4 20h16v-7H4zM4 16c3 2 5-2 8 0s5-2 8 0M12 13V9M12 6v1',
+plane:'M3 12l18-8-5 16-4-6zM12 14l9-10',music:'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+flame:'M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z',
+medal:'M8 3l4 7 4-7M18 15a6 6 0 1 1-12 0 6 6 0 0 1 12 0z',key:'M14 10a4 4 0 1 0-3 3l9 8M17 18l2-2',
+cap:'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5',pin:'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-.01'};
+const spr=(k,c)=>`<span class="spr" style="background:${c}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="${IC[k]||IC.star}"/></svg></span>`;
+const H={RU:'1-1,1-2,1-3,1-4,1-5,1-6,1-7,1-8,2-23,3-8,5-1,5-9,6-12,11-4',UA:'1-1,3-8,5-1,5-8,6-28,8-24,12-25',BY:'1-1,1-7,3-8,5-1,5-9,7-3,11-7,12-25',
+KZ:'1-1,1-2,3-8,3-21,3-22,3-23,5-1,5-7,5-9,7-6,8-30,10-25,12-16',US:'1-1,6-19,7-4,11-11,12-25',DE:'1-1,5-1,10-3,12-25,12-26'};
+const pad=n=>String(n).padStart(2,'0');
+let db=[];try{db=JSON.parse(localStorage.getItem('kalendarium')||'[]')}catch(e){}
+let cal=null,cur=null;
+const save=()=>{try{localStorage.setItem('kalendarium',JSON.stringify(db))}catch(e){alert('Не хватает места в хранилище браузера — уменьшите число картинок.')}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---------- данные ---------- */
+function migrate(c){
+ if(c.mode){c.sy=c.ey=c.year;if(c.mode=='year'){c.sm=0;c.em=11}else c.sm=c.em=c.month;delete c.mode;delete c.year;delete c.month}
+ if(c.ev){c.evs=c.evs||[];for(const d in c.ev)c.ev[d].forEach(e=>c.evs.push({id:e.id,date:d,icon:e.icon,color:e.color,title:e.title,note:e.desc||'',rep:{t:'none'}}));delete c.ev}
+ c.evs=c.evs||[];return c}
+db.forEach(migrate);
+const TT='Календариум — конструктор календарей',dim=(y,m)=>new Date(y,m+1,0).getDate();
+const span=c=>{const a=c.sy*12+c.sm,b=c.ey*12+c.em;return a==b?MN[c.sm]+' '+c.sy:b-a==11&&c.sm==0?'Весь '+c.sy+' год':MN[c.sm].slice(0,3)+' '+c.sy+' – '+MN[c.em].slice(0,3)+' '+c.ey};
+/* ---------- библиотека ---------- */
+function lib(){
+ $('#cards').innerHTML=db.length?db.map(c=>`<div class="card"><h2>${esc(c.name)}</h2><p>${span(c)} · мероприятий: ${c.evs.length}</p>
+ <div class="r"><button class="pri" data-a="open" data-i="${c.id}">Открыть</button><button data-a="pdf" data-i="${c.id}">PDF</button><button data-a="dup" data-i="${c.id}">Копия</button><button data-a="rm" data-i="${c.id}">✕</button></div></div>`).join(''):'<div class="empty">Пока нет ни одного календаря.<br>Нажмите «Новый календарь» и начните ✨</div>';
+}
+$('#cards').onclick=e=>{const b=e.target.closest('button');if(!b)return;const c=db.find(x=>x.id==b.dataset.i),a=b.dataset.a;
+ if(a=='open')open(c);else if(a=='pdf'){open(c);setTimeout(()=>print(),300)}
+ else if(a=='dup'){const d=JSON.parse(JSON.stringify(c));d.id=uid();d.name+=' (копия)';db.push(d);save();lib()}
+ else if(a=='rm'&&confirm('Удалить «'+c.name+'» навсегда?')){db=db.filter(x=>x!=c);save();lib()}};
+$('#new').onclick=()=>{const n=prompt('Название календаря','Олимпиады');if(n===null)return;const y=new Date().getFullYear();
+ const c={id:uid(),name:n||'Без названия',sy:y,sm:0,ey:y,em:11,ws:1,country:'RU',holidays:true,theme:'',bgMode:'none',op:.5,hdr:null,patches:[],showList:true,showNotes:true,notes:{},evs:[]};db.push(c);save();open(c)};
+/* ---------- редактор ---------- */
+document.querySelectorAll('.ms').forEach(s=>s.innerHTML=MN.map((m,i)=>`<option value="${i}">${m}</option>`).join(''));
+function fill(){document.querySelectorAll('[data-k]').forEach(e=>{const v=cal[e.dataset.k];e.type=='checkbox'?e.checked=v:e.value=v})}
+function open(c){cal=c;$('#lib').hidden=true;$('#ed').hidden=false;document.title=cal.name;fill();side();render();scrollTo(0,0)}
+$('#back').onclick=()=>{$('#ed').hidden=true;$('#lib').hidden=false;document.title=TT;lib()};
+$('#pdf').onclick=()=>{alert('В окне печати выберите «Сохранить как PDF» (файл получит название календаря). Для цветного фона включите «Фоновая графика».');document.title=cal.name;print()};
+addEventListener('beforeprint',()=>{if(cal&&!$('#ed').hidden)document.title=cal.name});
+function hs(e){const t=e.target,k=t.dataset.k;if(!k)return;
+ cal[k]=t.type=='checkbox'?t.checked:t.dataset.n!=null?+t.value:t.value;
+ if(['sy','sm','ey','em'].includes(k)){const y=new Date().getFullYear();if(!(cal.sy>=1900))cal.sy=y;if(!(cal.ey>=1900))cal.ey=cal.sy;
+  const a=cal.sy*12+cal.sm;let b=cal.ey*12+cal.em;if(b<a)b=a;if(b-a>59)b=a+59;cal.ey=Math.floor(b/12);cal.em=b%12;fill()}
+ if(k=='name')document.title=cal.name;
+ save();side();render()}
+$('#side').addEventListener('input',e=>{if(e.target.type=='text')hs(e)});
+$('#side').addEventListener('change',e=>{if(e.target.type!='text')hs(e)});
+$('#fy').onclick=()=>{cal.sm=0;cal.em=11;cal.ey=cal.sy;fill();save();render()};
+function side(){$('#ttl').textContent=cal.name;
+ let h='';
+ if(cal.bgMode=='header')h+=`<label>Картинка шапки</label><input type="file" accept="image/*" id="fh">${cal.hdr?`<div class="th"><img src="${cal.hdr}" data-rm="h" title="Убрать"></div>`:''}`;
+ if(cal.bgMode=='patches')h+=`<label>Нашивки (можно сразу несколько)</label><input type="file" accept="image/*" multiple id="fp">
+  <div class="th">${cal.patches.map((p,i)=>`<img src="${p}" data-rm="${i}" title="Убрать">`).join('')}</div>
+  <label>Прозрачность</label><input type="range" min=".1" max="1" step=".05" value="${cal.op}" id="op" style="width:100%">`;
+ $('#imgs').innerHTML=h}
+function fit(f,max,t){return new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL(t,.85))};i.src=URL.createObjectURL(f)})}
+$('#imgs').addEventListener('change',async e=>{
+ if(e.target.id=='fh'){cal.hdr=await fit(e.target.files[0],1400,'image/jpeg')}
+ if(e.target.id=='fp'){for(const f of e.target.files)cal.patches.push(await fit(f,300,'image/png'))}
+ save();side();render()});
+$('#imgs').addEventListener('input',e=>{if(e.target.id=='op'){cal.op=+e.target.value;save();render()}});
+$('#imgs').addEventListener('click',e=>{const r=e.target.dataset.rm;if(r==null)return;r=='h'?cal.hdr=null:cal.patches.splice(+r,1);save();side();render()});
+/* ---------- повторы ---------- */
+function hit(e,y,m,d){
+ const [a,b,c]=e.date.split('-').map(Number),s=Date.UTC(a,b-1,c),t=Date.UTC(y,m,d);if(t<s)return false;
+ const r=e.rep||{t:'none'},n=Math.max(1,r.n||1);if(r.t=='none')return t==s;
+ const df=Math.round((t-s)/864e5);let i;
+ if(r.t=='day'){if(df%n)return false;i=df/n}
+ else if(r.t=='week'){if(df%(7*n))return false;i=df/(7*n)}
+ else if(r.t=='month'){const md=(y-a)*12+m-(b-1);if(md%n||d!=Math.min(c,dim(y,m)))return false;i=md/n}
+ else{const yd=y-a;if(yd%n||m!=b-1||d!=Math.min(c,dim(y,m)))return false;i=yd/n}
+ if(r.end=='date'&&r.until){const u=r.until.split('-').map(Number);if(t>Date.UTC(u[0],u[1]-1,u[2]))return false}
+ if(r.end=='count'&&i>=(r.cnt||1))return false;
+ return true}
+/* ---------- страницы ---------- */
+const rng=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+function sheet(y,m){
+ const hol=new Set(cal.holidays?H[cal.country].split(','):[]),ws=cal.ws,off=(new Date(y,m,1).getDay()-ws+7)%7,n=dim(y,m),ym=y+'-'+pad(m+1);
+ const wd=ws?WD:[WD[6],...WD.slice(0,6)];
+ let p='';
+ if(cal.bgMode=='patches'&&cal.patches.length){const r=rng([...cal.id+ym].reduce((h,c)=>h*31+c.charCodeAt(0)|0,7));
+  for(let i=0;i<34;i++){const s=38+r()*50;p+=`<img src="${cal.patches[i%cal.patches.length]}" style="left:${r()*95-3}%;top:${r()*97-3}%;width:${s}px;transform:rotate(${r()*50-25}deg)">`}
+  p=`<div class="patch" style="opacity:${cal.op}">${p}</div>`}
+ const img=cal.bgMode=='header'&&cal.hdr;
+ let g='';for(let i=0;i<off;i++)g+='<div class="c bl"></div>';
+ for(let d=1;d<=n;d++){const dow=new Date(y,m,d).getDay(),key=ym+'-'+pad(d);
+  const evs=cal.evs.filter(e=>hit(e,y,m,d)).map(e=>`<button class="ev" data-id="${e.id}" title="${esc(e.note)}">${spr(e.icon,e.color)}<b>${esc(e.title)}</b>${(e.rep||{}).t&&e.rep.t!='none'?'<i>↻</i>':''}</button>`).join('');
+  g+=`<div class="c${dow%6==0?' we':''}${hol.has((m+1)+'-'+d)?' ho':''}"><span class="n">${d}</span><button class="add" data-d="${key}" title="Добавить мероприятие">+</button>${evs}</div>`}
+ for(let i=off+n;i<Math.ceil((off+n)/7)*7;i++)g+='<div class="c bl"></div>';
+ let list='';
+ if(cal.showList){const it=[];cal.evs.filter(e=>e.note).forEach(e=>{const ds=[];for(let d=1;d<=n;d++)if(hit(e,y,m,d))ds.push(d);
+  if(ds.length)it.push([ds[0],`<div>${spr(e.icon,e.color)}<span><b>${ds.join(', ')} ${MN[m].slice(0,3)}.</b> ${esc(e.title)}<br><small>${esc(e.note)}</small></span></div>`])});
+  if(it.length)list=`<div class="lst">${it.sort((a,b)=>a[0]-b[0]).map(x=>x[1]).join('')}</div>`}
+ const nv=cal.notes[ym]||'',nh=/<[a-z][^>]*>/i.test(nv)?nv:esc(nv);
+ return `<article class="sheet ${cal.theme}">${p}
+ <div class="hd${img?' img':''}" ${img?`style="background-image:linear-gradient(transparent 20%,#0008),url(${cal.hdr})"`:''}><h2>${MN[m]}</h2><span>${y}</span></div>
+ <div class="wd">${wd.map((w,i)=>`<div class="${(ws?i>4:i%6==0)?'we':''}">${w}</div>`).join('')}</div>
+ <div class="gr">${g}</div>${list}
+ ${cal.showNotes?`<div class="nt"><h3>Пометки</h3><div class="nb${nv.replace(/<[^>]*>/g,'').trim()?'':' em'}" contenteditable data-ym="${ym}">${nh}</div></div>`:''}</article>`}
+function render(){let h='';for(let a=cal.sy*12+cal.sm,b=cal.ey*12+cal.em;a<=b;a++)h+=sheet(Math.floor(a/12),a%12);
+ $('#sheets').innerHTML=h;$('#fmt').hidden=!cal.showNotes;nb=null}
+$('#sheets').addEventListener('input',e=>{const el=e.target.closest('.nb');if(el){cal.notes[el.dataset.ym]=el.innerHTML;el.classList.toggle('em',!el.textContent.trim());save()}});
+$('#sheets').addEventListener('paste',e=>{if(e.target.closest('.nb')){e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'))}});
+$('#sheets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;b.classList.contains('add')?edit(b.dataset.d):edit(null,b.dataset.id)});
+/* ---------- оформление пометок ---------- */
+let rg=null,nb=null;
+document.addEventListener('selectionchange',()=>{const s=getSelection();if(!s.rangeCount)return;const n=s.anchorNode,el=(n&&n.nodeType==1?n:n&&n.parentElement)?.closest?.('.nb');if(el){nb=el;rg=s.getRangeAt(0).cloneRange()}});
+function fx(c,v){if(!nb||!nb.isConnected){alert('Сначала нажмите в поле «Пометки» и выделите текст.');return}
+ nb.focus();const s=getSelection();s.removeAllRanges();if(rg)s.addRange(rg);
+ if(c=='fontSize'){document.execCommand('styleWithCSS',false,false);document.execCommand('fontSize',false,'7');
+  nb.querySelectorAll('font[size="7"]').forEach(f=>{const p=document.createElement('span');p.style.fontSize=v+'px';p.innerHTML=f.innerHTML;f.replaceWith(p)})}
+ else{document.execCommand('styleWithCSS',false,true);document.execCommand(c,false,v)}
+ if(getSelection().rangeCount)rg=getSelection().getRangeAt(0).cloneRange();
+ cal.notes[nb.dataset.ym]=nb.innerHTML;nb.classList.toggle('em',!nb.textContent.trim());save()}
+$('#fmt').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
+$('#fmt').addEventListener('click',e=>{const b=e.target.closest('button[data-c]');if(b)fx(b.dataset.c)});
+$('#ff').onchange=e=>{if(e.target.value)fx('fontName',e.target.value);e.target.selectedIndex=0};
+$('#fs').onchange=e=>{if(e.target.value)fx('fontSize',e.target.value);e.target.selectedIndex=0};
+$('#fc').onchange=e=>fx('foreColor',e.target.value);
+$('#fb').onchange=e=>fx('hiliteColor',e.target.value);
+/* ---------- мероприятия ---------- */
+function paint(){$('#ig').innerHTML=Object.keys(IC).map(k=>`<button data-ic="${k}" class="${cur.icon==k?'on':''}">${spr(k,cur.color)}</button>`).join('');
+ $('#cg').innerHTML=COL.map(c=>`<button data-c="${c}" class="${cur.color==c?'on':''}" style="background:${c}"></button>`).join('')+`<input type="color" value="${cur.color}" id="cc" style="width:30px;height:28px;border:0;padding:0">`}
+const UN={day:'дн.',week:'нед.',month:'мес.',year:'г.'};
+function rsync(){const t=$('#rt').value,k=$('#re').value;$('#rp').hidden=t=='none';$('#ru').textContent=UN[t]||'';$('#rd').hidden=k!='date';$('#rc').hidden=k!='count'}
+function edit(date,id){const o=id?cal.evs.find(e=>e.id==id):null,r=o?.rep||{t:'none'};
+ cur={id:o?.id,icon:o?.icon||'star',color:o?.color||COL[0],date:o?o.date:date};
+ $('#dt').textContent=o?'Изменить мероприятие':'Новое мероприятие';
+ $('#et').value=o?.title||'';$('#edt').value=cur.date;
+ $('#rt').value=r.t;$('#rn').value=r.n||1;$('#re').value=r.end||'never';$('#rd').value=r.until||cur.date;$('#rc').value=r.cnt||10;
+ $('#hn').checked=!!o?.note;$('#ed2').hidden=!o?.note;$('#ed2').value=o?.note||'';
+ $('#del').hidden=!o;rsync();paint();$('#dlg').showModal()}
+$('#dlg').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.ic){cur.icon=t.dataset.ic;paint()}if(t.dataset.c){cur.color=t.dataset.c;paint()}});
+$('#dlg').addEventListener('input',e=>{if(e.target.id=='cc'){cur.color=e.target.value;$('#ig').querySelectorAll('.spr').forEach(s=>s.style.background=cur.color)}});
+$('#dlg').addEventListener('change',e=>{if(e.target.id=='rt'||e.target.id=='re')rsync();if(e.target.id=='hn')$('#ed2').hidden=!e.target.checked});
+$('#cx').onclick=()=>$('#dlg').close();
+$('#ok').onclick=()=>{const t=$('#rt').value,o={id:cur.id||uid(),date:$('#edt').value||cur.date,icon:cur.icon,color:cur.color,title:$('#et').value.trim()||'Событие',note:$('#hn').checked?$('#ed2').value.trim():'',rep:{t}};
+ if(t!='none'){const r=o.rep;r.n=Math.max(1,+$('#rn').value||1);r.end=$('#re').value;r.until=$('#rd').value;r.cnt=Math.max(1,+$('#rc').value||1);if(r.end=='date'&&!r.until)r.end='never'}
+ const i=cal.evs.findIndex(e=>e.id==o.id);i<0?cal.evs.push(o):cal.evs[i]=o;save();render();$('#dlg').close()};
+$('#del').onclick=()=>{cal.evs=cal.evs.filter(e=>e.id!=cur.id);save();render();$('#dlg').close()};
+/* ---------- картинка ---------- */
+let xfile=null,xurl=null;
+const XV="--bg:#efe9dd;--pn:#fffdf8;--tx:#2b2622;--mu:#8a8075;--ac:#c4452d;--ln:#d9cfbf;color:#2b2622;font:15px/1.4 'Trebuchet MS',system-ui,sans-serif";
+const mlist=()=>{const r=[];for(let a=cal.sy*12+cal.sm,b=cal.ey*12+cal.em;a<=b;a++)r.push(a);return r};
+function xsync(){const o=$('#xm').value=='one';$('#xone').hidden=!o;$('#xall').hidden=o}
+$('#img').onclick=()=>{const l=mlist();$('#xs').innerHTML=l.map(a=>`<option value="${a}">${MN[a%12]} ${Math.floor(a/12)}</option>`).join('');
+ $('#xm').value=l.length>1?'all':'one';$('#xc').value=l.length>9?'3':l.length>3?'2':'1';$('#xp').innerHTML='';xsync();$('#xdlg').showModal()};
+$('#xm').onchange=xsync;$('#xcl').onclick=()=>$('#xdlg').close();
+$('#xgo').onclick=async()=>{const b=$('#xgo');b.disabled=true;b.textContent='Создаю…';$('#xp').textContent='';
+ try{await makeImg()}catch(e){console.error(e);$('#xp').innerHTML='<p style="color:#c4452d">Не получилось создать картинку в этом браузере. Попробуйте Chrome или используйте «⬇ PDF».</p>'}
+ b.disabled=false;b.textContent='Создать картинку'};
+async function makeImg(){
+ const one=$('#xm').value=='one',l=one?[+$('#xs').value]:mlist(),cols=one?1:Math.min(+$('#xc').value,l.length),W=cols<2?900:cols==2?800:700,G=24;
+ const css=document.querySelector('style').textContent+`.x .sheet{max-width:none;margin:0;box-shadow:none}.x .add{display:none}.x .nb.em:before{display:none}.x .hd h2{font-size:44px}.x .lst{grid-template-columns:1fr 1fr}.xp .sheet{min-height:${Math.round(W*1.3)}px}.xq .sheet{height:100%}`;
+ const wrap=document.createElement('div');wrap.className='xp x';
+ wrap.style.cssText=`position:fixed;left:-99999px;top:0;width:${cols*W+(cols+1)*G}px;padding:${G}px;display:grid;grid-template-columns:repeat(${cols},${W}px);gap:${G}px;background:#efe9dd;${XV}`;
+ wrap.innerHTML=`<style>${css}</style>`+l.map(a=>sheet(Math.floor(a/12),a%12)).join('');
+ document.body.appendChild(wrap);
+ const w=wrap.offsetWidth,h=wrap.offsetHeight,rs=[...wrap.querySelectorAll('.sheet')].map(s=>({x:s.offsetLeft,y:s.offsetTop,w:s.offsetWidth,h:s.offsetHeight,n:new XMLSerializer().serializeToString(s)}));
+ wrap.remove();
+ const sc=Math.min(+$('#xq').value,Math.sqrt(3.6e7/(w*h)),16000/Math.max(w,h)),cv=document.createElement('canvas');cv.width=Math.round(w*sc);cv.height=Math.round(h*sc);
+ const cx=cv.getContext('2d');cx.fillStyle='#efe9dd';cx.fillRect(0,0,cv.width,cv.height);
+ for(const r of rs){const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${r.w}" height="${r.h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" class="xq x" style="width:${r.w}px;height:${r.h}px;${XV}"><style>${css}</style>${r.n}</div></foreignObject></svg>`;
+  const im=new Image();await new Promise((ok,no)=>{im.onload=ok;im.onerror=no;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+  cx.drawImage(im,r.x*sc,r.y*sc,r.w*sc,r.h*sc)}
+ const blob=await new Promise(r=>cv.toBlob(r,'image/png'));if(!blob)throw new Error('blob');
+ const nm=(cal.name+' — '+(one?MN[l[0]%12]+' '+Math.floor(l[0]/12):span(cal))).replace(/[\\/:*?"<>|]/g,'')+'.png';
+ xfile=new File([blob],nm,{type:'image/png'});if(xurl)URL.revokeObjectURL(xurl);xurl=URL.createObjectURL(blob);
+ $('#xp').innerHTML=`<img src="${xurl}" style="max-width:100%;max-height:40vh;border:1px solid var(--ln)"><div class="dr" style="margin-top:8px"><a class="dl" href="${xurl}" download="${esc(nm)}">⬇ Скачать PNG</a>${navigator.canShare&&navigator.canShare({files:[xfile]})?'<button id="xsh">Поделиться</button>':''}</div>`;
+ const sh=$('#xsh');if(sh)sh.onclick=()=>navigator.share({files:[xfile],title:cal.name}).catch(()=>{})}
+lib();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('kalendarium-sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
